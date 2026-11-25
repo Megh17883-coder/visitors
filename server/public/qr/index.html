@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Common Visitor QR &bull; Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b111e;
+      --surface: #131c2e;
+      --surface-subtle: #19243a;
+      --border: #23314d;
+      --border-focus: #3b82f6;
+      --text: #f1f5f9;
+      --text-muted: #8b9bb4;
+      --text-subtle: #62728d;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(500px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      text-align: left;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #93c5fd;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      margin: 20px 0 6px;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .note {
+      font-size: 12px;
+      color: var(--text-subtle);
+      margin-top: 8px;
+      line-height: 1.45;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+
+    .btn-primary {
+      margin-top: 18px;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      margin-top: 12px;
+      background: var(--surface-subtle);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #1f2d48;
+    }
+
+    #qrcode {
+      background: #ffffff;
+      padding: 18px;
+      border-radius: var(--radius-md);
+      margin: 22px auto 6px;
+      width: max-content;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    #qrcode img {
+      display: block;
+    }
+
+    #status {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #93c5fd;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+    </div>
+    <h1>Entrance QR Code</h1>
+    <p>Generate one static QR code for your gate or entrance. Visitors scan this code to submit their check-in and display their welcome photos on the residence smart TVs.</p>
+
+    <label for="baseUrl">Server Base URL</label>
+    <input id="baseUrl" type="url" required placeholder="http://192.168.1.10:5000">
+    <div class="note">For local Wi-Fi, use your server host PC's IPv4 address. All visitors scan the same URL.</div>
+
+    <button id="generate" class="btn btn-primary">Generate QR Code</button>
+    <div id="status"></div>
+    <div id="qrcode"></div>
+    <button id="download" class="btn btn-secondary" style="display:none">Download QR Code Image</button>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    const host = location.hostname;
+    document.getElementById('baseUrl').value = `http://${host}:5000`;
+    let qrUrl = '';
+
+    document.getElementById('generate').onclick = () => {
+      const baseUrl = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
+      const status = document.getElementById('status');
+      if (!/^https?:\/\//i.test(baseUrl)) {
+        status.textContent = 'Please enter a valid base URL.';
+        return;
+      }
+      qrUrl = baseUrl + '/gate/';
+      status.textContent = 'QR code generated successfully.';
+      document.getElementById('qrcode').innerHTML = '';
+      if (!window.QRCode) {
+        status.textContent += ' QR library requires an active network connection.';
+        return;
+      }
+      new QRCode(document.getElementById('qrcode'), {
+        text: qrUrl,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      document.getElementById('download').style.display = 'inline-flex';
+    };
+
+    document.getElementById('download').onclick = () => {
+      const img = document.querySelector('#qrcode img');
+      if (!img) return;
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = 'residence-visitor-qr.png';
+      a.click();
+    };
+  </script>
+</body>
+</html>

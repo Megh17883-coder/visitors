@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard &bull; Visitor Display System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b111e;
+      --surface: #131c2e;
+      --surface-subtle: #19243a;
+      --surface-hover: #1f2d48;
+      --border: #23314d;
+      --border-focus: #3b82f6;
+      --text: #f1f5f9;
+      --text-muted: #8b9bb4;
+      --text-subtle: #62728d;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --success-surface: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-surface: rgba(245, 158, 11, 0.1);
+      --danger: #ef4444;
+      --danger-surface: rgba(239, 68, 68, 0.1);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 24px;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .title-area h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .title-area p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.15s, border-color 0.15s;
+      font-family: inherit;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--surface-subtle);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--surface-hover);
+      border-color: #314264;
+    }
+
+    .btn-danger {
+      background-color: var(--danger-surface);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .btn-danger:hover {
+      background-color: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Grid Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Connected TV Monitor */
+    .tv-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tv-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+    }
+
+    .tv-meta h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .tv-meta p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .tv-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 999px;
+      letter-spacing: 0.03em;
+    }
+
+    .status-online {
+      background: var(--success-surface);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .status-offline {
+      background: var(--surface);
+      color: var(--text-subtle);
+      border: 1px solid var(--border);
+    }
+
+    .dot-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .dot-online { background: var(--success); }
+    .dot-offline { background: var(--text-subtle); }
+
+    /* Broadcast section */
+    .broadcast-box {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .broadcast-box input {
+      flex: 1;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .broadcast-box input:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Switch row */
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .switch-label-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .switch-label-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--surface-subtle);
+      border: 1px solid var(--border);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #cbd5e1;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+      background-color: #ffffff;
+    }
+
+    /* Ambient photo gallery */
+    .ambient-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .gallery-item {
+      position: relative;
+      height: 80px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .gallery-item .del-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(11, 17, 30, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fca5a5;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .gallery-item .del-btn:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* Visitors Feed */
+    .visitor-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+
+    .visitor-item {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .visitor-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .visitor-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .visitor-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .badge-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-approved {
+      background: var(--success-surface);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .badge-pending {
+      background: var(--warning-surface);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .visitor-photos-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .visitor-thumb {
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .visitor-thumb:hover {
+      opacity: 0.85;
+    }
+
+    .visitor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrap">
+    <!-- Top Header -->
+    <header class="dashboard-header">
+      <div class="title-area">
+        <h1>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          Smart TV Central Control
+        </h1>
+        <p>Real-Time Visitor Sync &bull; webOS 22 Multi-Screen Manager</p>
+      </div>
+
+      <div class="header-actions">
+        <a href="/admin/visitor-profiles.html" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Visitor Profiles
+        </a>
+        <a href="/qr" target="_blank" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Common QR
+        </a>
+        <a href="/gate" target="_blank" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          Gate Portal
+        </a>
+        <a href="/tv?tvId=tv1" target="_blank" class="btn btn-primary">Living Room (TV 1)</a>
+        <a href="/tv?tvId=tv2" target="_blank" class="btn btn-secondary">Dining (TV 2)</a>
+        <a href="/tv?tvId=tv3" target="_blank" class="btn btn-secondary">Lounge (TV 3)</a>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="dashboard-grid">
+
+      <!-- Card 1: 3-TV Device Monitor -->
+      <div class="card">
+        <div class="card-title">
+          <span>Connected Displays (3x webOS)</span>
+        </div>
+
+        <div class="tv-list" id="tv-list">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Quick Message Broadcast -->
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">
+            Broadcast Alert to Displays
+          </div>
+          <form class="broadcast-box" onsubmit="sendBroadcast(event)">
+            <input type="text" id="broadcast-input" placeholder="e.g. Dinner is served..." required>
+            <button type="submit" class="btn btn-primary">Broadcast</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Card 2: System Settings -->
+      <div class="card">
+        <div class="card-title">
+          <span>Display Configuration</span>
+        </div>
+
+        <div class="switch-row">
+          <div>
+            <div class="switch-label-title">Auto-Approve Visitors</div>
+            <div class="switch-label-desc">Immediately display photos on TVs upon gate submission</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="auto-approve-toggle" onchange="toggleAutoApprove(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div>
+            <div class="switch-label-title">Priority Welcome Duration</div>
+            <div class="switch-label-desc">Display time for newly arrived visitors</div>
+          </div>
+          <div style="font-weight: 600; font-size: 13px; color: var(--text);">5 Minutes (300s)</div>
+        </div>
+
+        <div class="switch-row" style="border: none;">
+          <div>
+            <div class="switch-label-title">Ambient Mode</div>
+            <div class="switch-label-desc">Random photo rotation when no guest priority active</div>
+          </div>
+          <div style="font-weight: 600; font-size: 13px; color: var(--success);">Enabled</div>
+        </div>
+
+        <!-- Ambient Library -->
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted);">
+            Ambient Photos (<span id="ambient-count">0</span>)
+          </div>
+          <div class="ambient-gallery" id="ambient-gallery"></div>
+        </div>
+      </div>
+
+      <!-- Card 3: Live Visitor Feed -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-title">
+          <span>Recent Visitor Activity</span>
+          <button onclick="fetchVisitors()" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">Refresh</button>
+        </div>
+
+        <div class="visitor-feed" id="visitor-feed">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    let tvs = {};
+    let visitors = [];
+    let settings = {};
+
+    async function init() {
+      await fetchTVs();
+      await fetchSettings();
+      await fetchVisitors();
+      await fetchAmbientPhotos();
+    }
+
+    async function fetchTVs() {
+      try {
+        const res = await fetch('/api/tv/status');
+        const data = await res.json();
+        if (data.success) {
+          tvs = data.tvs;
+          renderTVs();
+        }
+      } catch (err) {
+        console.error('Error fetching TV status:', err);
+      }
+    }
+
+    function renderTVs() {
+      const tvList = document.getElementById('tv-list');
+      tvList.innerHTML = '';
+      Object.keys(tvs).forEach(k => {
+        const tv = tvs[k];
+        const isOnline = tv.status === 'online';
+        const item = document.createElement('div');
+        item.className = 'tv-item';
+        item.innerHTML = `
+          <div class="tv-meta">
+            <h4>${tv.name}</h4>
+            <p>${tv.location} &bull; Mode: ${tv.currentMode === 'priority_welcome' ? '5-Min Welcome' : 'Ambient Slideshow'}</p>
+          </div>
+          <div class="tv-status-badge ${isOnline ? 'status-online' : 'status-offline'}">
+            <div class="dot-indicator ${isOnline ? 'dot-online' : 'dot-offline'}"></div>
+            ${isOnline ? 'ONLINE' : 'OFFLINE'}
+          </div>
+        `;
+        tvList.appendChild(item);
+      });
+    }
+
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/admin/settings');
+        const data = await res.json();
+        if (data.success) {
+          settings = data.settings;
+          document.getElementById('auto-approve-toggle').checked = settings.autoApprove;
+        }
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    }
+
+    async function toggleAutoApprove(val) {
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoApprove: val })
+      });
+    }
+
+    async function fetchVisitors() {
+      try {
+        const res = await fetch('/api/admin/visitors');
+        const data = await res.json();
+        if (data.success) {
+          visitors = data.visitors;
+          renderVisitors();
+        }
+      } catch (err) {
+        console.error('Error fetching visitors:', err);
+      }
+    }
+
+    function renderVisitors() {
+      const feed = document.getElementById('visitor-feed');
+      feed.innerHTML = '';
+
+      if (visitors.length === 0) {
+        feed.innerHTML = '<div style="text-align: center; color: var(--text-subtle); padding: 32px 0;">No visitor records found. Submissions from the gate portal will appear here.</div>';
+        return;
+      }
+
+      visitors.forEach(v => {
+        const item = document.createElement('div');
+        item.className = 'visitor-item';
+
+        const photosHtml = (v.photos || []).map(url => `
+          <img src="${url}" class="visitor-thumb" onclick="window.open('${url}', '_blank')">
+        `).join('');
+
+        const isApproved = v.status === 'approved';
+
+        item.innerHTML = `
+          <div class="visitor-top">
+            <div>
+              <div class="visitor-name">${v.name}</div>
+              <div class="visitor-time">${v.phone || 'No Phone'} &bull; ${new Date(v.timestamp).toLocaleTimeString()}</div>
+            </div>
+            <span class="badge-status ${isApproved ? 'badge-approved' : 'badge-pending'}">
+              ${isApproved ? 'Displayed' : 'Pending Review'}
+            </span>
+          </div>
+
+          <div class="visitor-photos-row">
+            ${photosHtml || '<span style="font-size: 12px; color: var(--text-subtle);">No photos uploaded</span>'}
+          </div>
+
+          <div class="visitor-actions">
+            <button onclick="forceBroadcastVisitor('${v.id}')" class="btn btn-secondary">
+              Play on All Displays
+            </button>
+            ${!isApproved ? `
+              <button onclick="approveVisitor('${v.id}')" class="btn btn-primary">
+                Approve
+              </button>
+            ` : ''}
+            <button onclick="rejectVisitor('${v.id}')" class="btn btn-danger">
+              Remove
+            </button>
+          </div>
+        `;
+        feed.appendChild(item);
+      });
+    }
+
+    async function approveVisitor(id) {
+      await fetch(`/api/admin/approve/${id}`, { method: 'POST' });
+      fetchVisitors();
+      fetchAmbientPhotos();
+    }
+
+    async function forceBroadcastVisitor(id) {
+      await fetch(`/api/admin/approve/${id}`, { method: 'POST' });
+      alert('Broadcast triggered to all displays.');
+    }
+
+    async function rejectVisitor(id) {
+      if (!confirm('Remove this visitor record?')) return;
+      await fetch(`/api/admin/reject/${id}`, { method: 'POST' });
+      fetchVisitors();
+    }
+
+    async function sendBroadcast(e) {
+      e.preventDefault();
+      const input = document.getElementById('broadcast-input');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      await fetch('/api/admin/broadcast-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, durationSeconds: 15 })
+      });
+      input.value = '';
+      alert('Broadcast alert sent to displays.');
+    }
+
+    async function fetchAmbientPhotos() {
+      try {
+        const res = await fetch('/api/photos/ambient');
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('ambient-count').innerText = data.photos.length;
+          const gallery = document.getElementById('ambient-gallery');
+          gallery.innerHTML = '';
+          data.photos.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+            item.innerHTML = `
+              <img src="${p.url}">
+              <button class="del-btn" onclick="deletePhoto('${p.id}')" title="Delete photo">&times;</button>
+            `;
+            gallery.appendChild(item);
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching ambient photos:', err);
+      }
+    }
+
+    async function deletePhoto(id) {
+      if (!confirm('Remove photo from ambient rotation?')) return;
+      await fetch(`/api/photos/${id}`, { method: 'DELETE' });
+      fetchAmbientPhotos();
+    }
+
+    socket.on('TV_STATUS_UPDATE', (updatedTVs) => {
+      tvs = updatedTVs;
+      renderTVs();
+    });
+
+    socket.on('VISITOR_EVENT', () => {
+      fetchVisitors();
+      fetchAmbientPhotos();
+    });
+
+    init();
+  </script>
+</body>
+</html>
